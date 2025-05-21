@@ -24,8 +24,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // Rutas específicas para artistas
-    Route::middleware('role.artist')->prefix('artist')->group(function () {
+    // Rutas específicas para artistas - Cambiado de artist_approved a artist
+    Route::middleware('role:artist')->prefix('artist')->group(function () {
         Route::get('/', [ArtistController::class, 'index'])->name('artist.index');
         Route::get('/obras', [ArtistController::class, 'obras'])->name('artist.obras');
         Route::get('/nueva-obra', [ArtistController::class, 'nuevaObra'])->name('artist.nueva-obra');
@@ -37,7 +37,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // Rutas específicas para users
-    Route::middleware('role.user')->prefix('user')->group(function () {
+    Route::middleware('role:user')->prefix('user')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('user.index');
         Route::get('/favoritos', [UserController::class, 'favoritos'])->name('user.favoritos');
         Route::get('/explorar', [UserController::class, 'explorar'])->name('user.explorar');
@@ -51,7 +51,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Rutas de administración
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::post('/admin/artist/{id}/approve', [AdminController::class, 'approveArtist'])->name('admin.approve.artist');
     Route::post('/admin/artist/{id}/reject', [AdminController::class, 'rejectArtist'])->name('admin.reject.artist');
     Route::get('/admin/users', [AdminController::class, 'listUsers'])->name('admin.users');

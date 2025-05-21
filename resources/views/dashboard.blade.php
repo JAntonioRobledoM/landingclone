@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="container py-5">
-    @if(Auth::user()->role == 'artist')
+    @if(Auth::user()->role == 'pending_artist')
         <!-- Mensaje para artistas en lista de espera -->
         <div class="card text-center my-5">
             <div class="card-body py-5">
@@ -71,7 +71,7 @@
                                 <div class="card bg-info text-white">
                                     <div class="card-body text-center">
                                         <h5 class="card-title">Artistas aprobados</h5>
-                                        <p class="display-4">{{ \App\Models\User::where('role', 'artist_approved')->count() }}</p>
+                                        <p class="display-4">{{ \App\Models\User::where('role', 'artist')->count() }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -221,8 +221,8 @@
                 </div>
             </div>
         </div>
-    @elseif(Auth::user()->role == 'artist_approved')
-        <!-- Mensaje para artistas aprobados -->
+    @elseif(Auth::user()->role == 'artist')
+        <!-- Mensaje para artistas aprobados (ahora simplemente 'artist') -->
         <div class="card text-center my-5">
             <div class="card-body py-5">
                 <div class="mb-4">

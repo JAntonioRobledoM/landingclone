@@ -42,8 +42,8 @@ class AdminController extends Controller
         // Buscar el usuario que solicitó ser artista
         $user = $artistRequest->user;
 
-        // Actualizar el rol a 'artist_approved'
-        $user->role = 'artist_approved';
+        // Actualizar el rol a 'artist' (antes era 'artist_approved')
+        $user->role = 'artist';
         $user->save();
 
         // Actualizar el estado de la solicitud
@@ -128,7 +128,7 @@ class AdminController extends Controller
     {
         $user = User::findOrFail($id);
 
-        // Validación de datos
+        // Validación de datos - actualizado para incluir pending_artist y quitar artist_approved
         $validatedData = $request->validate([
             'username' => [
                 'required', 
@@ -141,7 +141,7 @@ class AdminController extends Controller
                 'email', 
                 Rule::unique('users')->ignore($user->id)
             ],
-            'role' => 'required|in:user,artist,artist_approved,admin',
+            'role' => 'required|in:user,pending_artist,artist,admin',
             'password' => 'nullable|min:6|confirmed'
         ]);
 

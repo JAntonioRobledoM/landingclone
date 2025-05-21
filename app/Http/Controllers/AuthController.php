@@ -63,7 +63,9 @@ class AuthController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
-        // Crear el usuario con el rol seleccionado
+        // Crear el usuario - si selecciona artista, asignarle rol 'pending_artist'
+        $role = $request->role === 'artist' ? 'pending_artist' : 'user';
+        
         $user = User::create([
             'username' => $request->username,
             'email' => $request->email,
@@ -71,7 +73,7 @@ class AuthController extends Controller
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'birthday' => $request->birthday,
-            'role' => $request->role, // Usar el rol seleccionado directamente
+            'role' => $role, 
         ]);
 
         // Si quiere ser artista, crear una solicitud de artista con la motivación

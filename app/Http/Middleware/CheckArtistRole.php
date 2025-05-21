@@ -20,6 +20,7 @@ class CheckArtistRole
             return redirect('login');
         }
         
+        // Cambio de artist_approved a artist
         if (Auth::user()->role != 'artist') {
             return redirect('dashboard')->with('error', 'Acceso denegado. Esta sección es solo para artistas.');
         }
