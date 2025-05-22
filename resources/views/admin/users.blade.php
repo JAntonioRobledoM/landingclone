@@ -69,10 +69,10 @@
                                                 @case('admin')
                                                     <span class="badge bg-danger">Administrador</span>
                                                     @break
-                                                @case('artist')
+                                                @case('pending_artist')
                                                     <span class="badge bg-warning">Artista (Pendiente)</span>
                                                     @break
-                                                @case('artist_approved')
+                                                @case('artist')
                                                     <span class="badge bg-success">Artista Aprobado</span>
                                                     @break
                                                 @case('user')
@@ -144,8 +144,8 @@
                                                                     <label class="form-label">Rol</label>
                                                                     <select name="role" class="form-select" required>
                                                                         <option value="user" {{ $user->role == 'user' ? 'selected' : '' }}>Usuario</option>
-                                                                        <option value="artist" {{ $user->role == 'artist' ? 'selected' : '' }}>Artista (Pendiente)</option>
-                                                                        <option value="artist_approved" {{ $user->role == 'artist_approved' ? 'selected' : '' }}>Artista Aprobado</option>
+                                                                        <option value="pending_artist" {{ $user->role == 'pending_artist' ? 'selected' : '' }}>Artista (Pendiente)</option>
+                                                                        <option value="artist" {{ $user->role == 'artist' ? 'selected' : '' }}>Artista Aprobado</option>
                                                                         <option value="admin" {{ $user->role == 'admin' ? 'selected' : '' }}>Administrador</option>
                                                                     </select>
                                                                 </div>
