@@ -28,15 +28,17 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             $request->session()->regenerate();
-            
+
             $user = Auth::user();
-            
+
             // Redirigir según el rol del usuario
             if ($user->role === 'artist') {
                 return redirect()->intended('/artist/dashboard');
             } elseif ($user->role === 'pending_artist') {
-                return redirect()->intended('/dashboard')->with('info', 
-                    'Tu solicitud de artista está pendiente de aprobación. Te notificaremos cuando sea procesada.');
+                return redirect()->intended('/dashboard')->with(
+                    'info',
+                    'Tu solicitud de artista está pendiente de aprobación. Te notificaremos cuando sea procesada.'
+                );
             } else {
                 return redirect()->intended('/dashboard');
             }
@@ -54,79 +56,87 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
-        // Reglas de validación base
-        $validationRules = [
-            'username' => 'required|string|max:45|unique:users',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+        // Validación base
+        $rules = [
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
-            'birthday' => 'nullable|date|before:today',
+            'username' => 'required|string|max:255|unique:users',
+            'email' => 'required|email|unique:users',
+            'birthday' => 'required|date',
+            'password' => 'required|string|min:8|confirmed',
             'role' => 'required|in:user,artist',
-            'terms' => 'required',
+            'terms' => 'required|accepted',
         ];
-        
-        // Añadir validaciones específicas para artistas
-        if ($request->role === 'artist') {
-            $validationRules['motivation'] = 'required|string|min:50|max:1000';
-            $validationRules['artwork_image'] = 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120'; // 5MB max
-            $validationRules['artwork_title'] = 'required|string|max:255';
-            $validationRules['artwork_description'] = 'nullable|string|max:1000';
-        }
-        
-        $validator = Validator::make($request->all(), $validationRules, [
-            'motivation.min' => 'La motivación debe tener al menos 50 caracteres.',
-            'motivation.max' => 'La motivación no puede exceder los 1000 caracteres.',
-            'artwork_image.required' => 'Debes subir al menos una obra para registrarte como artista.',
-            'artwork_image.image' => 'El archivo debe ser una imagen.',
-            'artwork_image.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg, gif o webp.',
-            'artwork_image.max' => 'La imagen no puede ser mayor a 5MB.',
-            'artwork_title.required' => 'El título de la obra es obligatorio.',
-            'artwork_title.max' => 'El título no puede exceder los 255 caracteres.',
-            'artwork_description.max' => 'La descripción no puede exceder los 1000 caracteres.',
-            'birthday.before' => 'Debes proporcionar una fecha de nacimiento válida.',
-            'terms.required' => 'Debes aceptar los términos y condiciones.',
-        ]);
 
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
+        // Validaciones adicionales para artistas
+        if ($request->role === 'artist') {
+            $rules = array_merge($rules, [
+                'motivation' => 'required|string|max:1000',
+                'artwork_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
+                'artwork_title' => 'required|string|max:255',
+                'artwork_description' => 'nullable|string|max:1000',
+            ]);
         }
 
-        // Crear el usuario - si selecciona artista, asignarle rol 'pending_artist'
-        $role = $request->role === 'artist' ? 'pending_artist' : 'user';
-        
-        $user = User::create([
-            'username' => $request->username,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'first_name' => $request->first_name,
-            'last_name' => $request->last_name,
-            'birthday' => $request->birthday,
-            'role' => $role, 
-        ]);
+        $validatedData = $request->validate($rules);
 
-        // Si quiere ser artista, crear una solicitud de artista con la motivación y obra
-        if ($request->role === 'artist') {
-            // Crear la solicitud de artista
-            ArtistRequest::create([
-                'user_id' => $user->id,
-                'motivation' => $request->motivation,
-                'status' => 'pending',
+        try {
+            // Crear usuario base
+            $user = User::create([
+                'first_name' => $validatedData['first_name'],
+                'last_name' => $validatedData['last_name'],
+                'username' => $validatedData['username'],
+                'email' => $validatedData['email'],
+                'birthday' => $validatedData['birthday'],
+                'password' => Hash::make($validatedData['password']),
+                'role' => $request->role === 'artist' ? 'pending_artist' : 'user',
             ]);
 
-            // Guardar la obra de arte si se subió
-            if ($request->hasFile('artwork_image')) {
-                $this->saveArtwork($user, $request->file('artwork_image'), $request->all());
+            // Si es artista, crear solicitud con obra
+            if ($request->role === 'artist') {
+                $artworkData = [
+                    'user_id' => $user->id,
+                    'motivation' => $validatedData['motivation'],
+                    'artwork_title' => $validatedData['artwork_title'],
+                    'artwork_description' => $validatedData['artwork_description'] ?? null,
+                ];
+
+                // Procesar la imagen de la obra
+                if ($request->hasFile('artwork_image')) {
+                    $imageFile = $request->file('artwork_image');
+
+                    // Generar nombre único para el archivo
+                    $fileName = 'artist_request_' . $user->id . '_' . time() . '.' . $imageFile->getClientOriginalExtension();
+
+                    // Guardar en storage/app/public/artist_requests
+                    $imagePath = $imageFile->storeAs('artist_requests', $fileName, 'public');
+
+                    // Añadir información de la imagen
+                    $artworkData = array_merge($artworkData, [
+                        'artwork_image_path' => $imagePath,
+                        'artwork_original_filename' => $imageFile->getClientOriginalName(),
+                        'artwork_mime_type' => $imageFile->getMimeType(),
+                        'artwork_file_size' => $imageFile->getSize(),
+                    ]);
+                }
+
+                // Crear la solicitud de artista
+                ArtistRequest::create($artworkData);
             }
 
-            return redirect()->route('login')
-                ->with('registered', true)
-                ->with('success', '¡Registro exitoso! Tu solicitud de artista está pendiente de aprobación. Te notificaremos por email cuando sea procesada.');
-        }
+            // Autenticar usuario
+            Auth::login($user);
 
-        return redirect()->route('login')
-            ->with('registered', true)
-            ->with('success', '¡Registro exitoso! Ahora puedes iniciar sesión.');
+            return redirect()->route('dashboard')->with(
+                'success',
+                $request->role === 'artist'
+                ? 'Registro exitoso. Tu solicitud de artista está pendiente de aprobación.'
+                : 'Registro exitoso. ¡Bienvenido a Everlasting Art!'
+            );
+
+        } catch (\Exception $e) {
+            return back()->withInput()->with('error', 'Error al procesar el registro. Por favor intenta nuevamente.');
+        }
     }
 
     /**
@@ -137,7 +147,7 @@ class AuthController extends Controller
         try {
             // Generar nombre único para el archivo
             $fileName = Str::uuid() . '.' . $imageFile->getClientOriginalExtension();
-            
+
             // Guardar en storage/app/public/artworks
             $imagePath = $imageFile->storeAs('artworks', $fileName, 'public');
 
@@ -157,7 +167,7 @@ class AuthController extends Controller
         } catch (\Exception $e) {
             // Log del error para debugging
             \Log::error('Error al guardar obra en registro: ' . $e->getMessage());
-            
+
             // No fallar el registro por esto, solo log del error
             // El usuario se puede registrar sin la obra si hay problemas
         }
@@ -177,7 +187,7 @@ class AuthController extends Controller
     public function approveArtist(Request $request, $userId)
     {
         $user = User::findOrFail($userId);
-        
+
         if ($user->role !== 'pending_artist') {
             return back()->with('error', 'El usuario no tiene una solicitud de artista pendiente.');
         }
@@ -207,7 +217,7 @@ class AuthController extends Controller
     public function rejectArtist(Request $request, $userId)
     {
         $user = User::findOrFail($userId);
-        
+
         if ($user->role !== 'pending_artist') {
             return back()->with('error', 'El usuario no tiene una solicitud de artista pendiente.');
         }
