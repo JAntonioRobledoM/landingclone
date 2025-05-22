@@ -50,11 +50,36 @@
             display: none;
         }
 
-        /* Estilos para el campo de motivación */
-        #motivationField {
+        /* Estilos para los campos específicos de artista */
+        .artist-fields {
             display: none;
-            /* Inicialmente oculto */
             transition: all 0.3s ease;
+        }
+
+        .image-preview {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 0.375rem;
+            border: 2px dashed #dee2e6;
+            padding: 10px;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 0.375rem;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .file-upload-area:hover {
+            border-color: #0d6efd;
+        }
+
+        .file-upload-area.dragover {
+            border-color: #0d6efd;
+            background-color: #f8f9fa;
         }
     </style>
 @endsection
@@ -77,7 +102,7 @@
 
                         <div class="title-heading text-center my-auto">
                             <div class="form-signin px-4 py-5 bg-white rounded-md shadow-sm">
-                                <form method="POST" action="{{ route('register') }}">
+                                <form method="POST" action="{{ route('register') }}" enctype="multipart/form-data">
                                     @csrf
                                     <h5 class="mb-4">Registra tu cuenta</h5>
 
@@ -110,8 +135,6 @@
                                         </button>
                                         <input type="hidden" name="role" id="roleInput" value="{{ old('role', 'user') }}">
                                     </div>
-
-
 
                                     <div class="form-floating mb-2">
                                         <input type="text" class="form-control @error('first_name') is-invalid @enderror"
@@ -158,18 +181,64 @@
                                         <label for="password_confirmation">Confirmar contraseña</label>
                                     </div>
 
-                                    <!-- Campo de motivación (aparece solo si es artista) -->
-                                    <div id="motivationField" class="mb-3"
+                                    <!-- Campos específicos para artistas -->
+                                    <div id="artistFields" class="artist-fields"
                                         style="{{ old('role') === 'artist' ? 'display: block;' : 'display: none;' }}">
-                                        <div class="form-floating">
-                                            <textarea class="form-control @error('motivation') is-invalid @enderror"
-                                                id="motivation" name="motivation"
-                                                placeholder="¿Por qué quieres ser artista?"
-                                                style="height: 120px">{{ old('motivation') }}</textarea>
-                                            <label for="motivation">¿Por qué quieres ser artista en Everlasting Art?</label>
+                                        
+                                        <!-- Campo de motivación -->
+                                        <div class="mb-3">
+                                            <div class="form-floating">
+                                                <textarea class="form-control @error('motivation') is-invalid @enderror"
+                                                    id="motivation" name="motivation"
+                                                    placeholder="¿Por qué quieres ser artista?"
+                                                    style="height: 120px">{{ old('motivation') }}</textarea>
+                                                <label for="motivation">¿Por qué quieres ser artista en Everlasting Art?</label>
+                                            </div>
+                                            <small class="text-muted">Cuéntanos brevemente por qué te gustaría unirte como
+                                                artista. Esta información nos ayudará a conocerte mejor.</small>
                                         </div>
-                                        <small class="text-muted">Cuéntanos brevemente por qué te gustaría unirte como
-                                            artista. Esta información nos ayudará a conocerte mejor.</small>
+
+                                        <!-- Subida de obra -->
+                                        <div class="mb-3">
+                                            <label class="form-label">Sube una obra para tu portafolio</label>
+                                            <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('artworkImage').click()">
+                                                <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-muted"></i>
+                                                <p class="mb-1">Haz clic para seleccionar una imagen</p>
+                                                <small class="text-muted">o arrastra y suelta aquí</small>
+                                                <input type="file" class="d-none @error('artwork_image') is-invalid @enderror" 
+                                                    id="artworkImage" name="artwork_image" accept="image/*" onchange="previewImage(this)">
+                                            </div>
+                                            <div id="imagePreview" class="mt-2"></div>
+                                            @error('artwork_image')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <!-- Título de la obra -->
+                                        <div class="form-floating mb-2">
+                                            <input type="text" class="form-control @error('artwork_title') is-invalid @enderror"
+                                                id="artworkTitle" name="artwork_title" placeholder="Título de la obra"
+                                                value="{{ old('artwork_title') }}">
+                                            <label for="artworkTitle">Título de la obra</label>
+                                            @error('artwork_title')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
+                                        <!-- Descripción de la obra -->
+                                        <div class="mb-3">
+                                            <div class="form-floating">
+                                                <textarea class="form-control @error('artwork_description') is-invalid @enderror"
+                                                    id="artworkDescription" name="artwork_description"
+                                                    placeholder="Descripción de la obra"
+                                                    style="height: 100px">{{ old('artwork_description') }}</textarea>
+                                                <label for="artworkDescription">Descripción de la obra (opcional)</label>
+                                            </div>
+                                            <small class="text-muted">Describe tu obra, técnica utilizada, inspiración, etc.</small>
+                                            @error('artwork_description')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
                                     </div>
 
                                     <div class="form-check align-items-center d-flex mb-3">
@@ -216,21 +285,35 @@
                 navbar.style.display = 'none';
             }
 
-            // Si hay un error de validación y el rol es artista, mostrar el campo de motivación
+            // Si hay un error de validación y el rol es artista, mostrar los campos de artista
             if (document.getElementById('roleInput').value === 'artist') {
-                document.getElementById('motivationField').style.display = 'block';
+                document.getElementById('artistFields').style.display = 'block';
             }
+
+            // Configurar drag and drop
+            setupDragAndDrop();
         });
 
         // Función para seleccionar el rol
         function selectRole(role) {
             document.getElementById('roleInput').value = role;
 
-            // Mostrar u ocultar campo de motivación
+            // Mostrar u ocultar campos de artista
+            const artistFields = document.getElementById('artistFields');
             if (role === 'artist') {
-                document.getElementById('motivationField').style.display = 'block';
+                artistFields.style.display = 'block';
+                // Hacer requeridos los campos de artista
+                document.getElementById('motivation').required = true;
+                document.getElementById('artworkImage').required = true;
+                document.getElementById('artworkTitle').required = true;
             } else {
-                document.getElementById('motivationField').style.display = 'none';
+                artistFields.style.display = 'none';
+                // Remover requerimientos de campos de artista
+                document.getElementById('motivation').required = false;
+                document.getElementById('artworkImage').required = false;
+                document.getElementById('artworkTitle').required = false;
+                // Limpiar preview de imagen
+                document.getElementById('imagePreview').innerHTML = '';
             }
 
             // Actualizar estilos de los botones
@@ -246,6 +329,67 @@
 
                 document.getElementById('roleUserBtn').classList.remove('btn-primary');
                 document.getElementById('roleUserBtn').classList.add('btn-outline-primary');
+            }
+        }
+
+        // Función para previsualizar imagen
+        function previewImage(input) {
+            const preview = document.getElementById('imagePreview');
+            preview.innerHTML = '';
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'image-preview';
+                    img.alt = 'Vista previa de la obra';
+                    preview.appendChild(img);
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Configurar drag and drop
+        function setupDragAndDrop() {
+            const uploadArea = document.getElementById('fileUploadArea');
+            const fileInput = document.getElementById('artworkImage');
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                uploadArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                uploadArea.classList.add('dragover');
+            }
+
+            function unhighlight(e) {
+                uploadArea.classList.remove('dragover');
+            }
+
+            uploadArea.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+
+                if (files.length > 0) {
+                    fileInput.files = files;
+                    previewImage(fileInput);
+                }
             }
         }
     </script>
