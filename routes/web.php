@@ -21,13 +21,8 @@ Route::middleware('guest')->group(function () {
 
 // Rutas autenticadas para todos los usuarios
 Route::middleware('auth')->group(function () {
-    // Dashboard principal - ahora manejado por AdminController para admins y HomeController para otros
-    Route::get('/dashboard', function () {
-        if (auth()->user()->role === 'admin') {
-            return app(AdminController::class)->dashboard();
-        }
-        return app(HomeController::class)->dashboard();
-    })->name('dashboard');
+    // Dashboard principal - ahora solo usa HomeController
+    Route::get('/dashboard', [HomeController::class, 'dashboard'])->name('dashboard');
     
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 

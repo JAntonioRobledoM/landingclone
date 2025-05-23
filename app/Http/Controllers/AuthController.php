@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\ArtistRequest;
+use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
@@ -94,34 +95,7 @@ class AuthController extends Controller
 
             // Si es artista, crear solicitud con obra
             if ($request->role === 'artist') {
-                $artworkData = [
-                    'user_id' => $user->id,
-                    'motivation' => $validatedData['motivation'],
-                    'artwork_title' => $validatedData['artwork_title'],
-                    'artwork_description' => $validatedData['artwork_description'] ?? null,
-                ];
-
-                // Procesar la imagen de la obra
-                if ($request->hasFile('artwork_image')) {
-                    $imageFile = $request->file('artwork_image');
-
-                    // Generar nombre único para el archivo
-                    $fileName = 'artist_request_' . $user->id . '_' . time() . '.' . $imageFile->getClientOriginalExtension();
-
-                    // Guardar en storage/app/public/artist_requests
-                    $imagePath = $imageFile->storeAs('artist_requests', $fileName, 'public');
-
-                    // Añadir información de la imagen
-                    $artworkData = array_merge($artworkData, [
-                        'artwork_image_path' => $imagePath,
-                        'artwork_original_filename' => $imageFile->getClientOriginalName(),
-                        'artwork_mime_type' => $imageFile->getMimeType(),
-                        'artwork_file_size' => $imageFile->getSize(),
-                    ]);
-                }
-
-                // Crear la solicitud de artista
-                ArtistRequest::create($artworkData);
+                $this->createArtistRequest($user, $request, $validatedData);
             }
 
             // Autenticar usuario
@@ -135,8 +109,48 @@ class AuthController extends Controller
             );
 
         } catch (\Exception $e) {
+            Log::error('Error en registro de usuario: ' . $e->getMessage());
             return back()->withInput()->with('error', 'Error al procesar el registro. Por favor intenta nuevamente.');
         }
+    }
+
+    /**
+     * Crear solicitud de artista con obra
+     */
+    protected function createArtistRequest(User $user, Request $request, array $validatedData)
+    {
+        $artworkData = [
+            'user_id' => $user->id,
+            'motivation' => $validatedData['motivation'],
+            'artwork_title' => $validatedData['artwork_title'],
+            'artwork_description' => $validatedData['artwork_description'] ?? null,
+            'status' => 'pending',
+        ];
+
+        // Procesar la imagen de la obra
+        if ($request->hasFile('artwork_image')) {
+            $imageFile = $request->file('artwork_image');
+
+            // Generar nombre único para el archivo
+            $fileName = 'artist_request_' . $user->id . '_' . time() . '.' . $imageFile->getClientOriginalExtension();
+
+            // Guardar en storage/app/public/artist_requests
+            $imagePath = $imageFile->storeAs('artist_requests', $fileName, 'public');
+
+            // Añadir información de la imagen
+            $artworkData = array_merge($artworkData, [
+                'artwork_image_path' => $imagePath,
+                'artwork_original_filename' => $imageFile->getClientOriginalName(),
+                'artwork_mime_type' => $imageFile->getMimeType(),
+                'artwork_file_size' => $imageFile->getSize(),
+            ]);
+        }
+
+        // Crear la solicitud de artista
+        ArtistRequest::create($artworkData);
+
+        // También crear la obra en la tabla artworks para cuando sea aprobada
+        $this->saveArtwork($user, $request->file('artwork_image'), $validatedData);
     }
 
     /**
@@ -166,10 +180,8 @@ class AuthController extends Controller
 
         } catch (\Exception $e) {
             // Log del error para debugging
-            \Log::error('Error al guardar obra en registro: ' . $e->getMessage());
-
+            Log::error('Error al guardar obra en registro: ' . $e->getMessage());
             // No fallar el registro por esto, solo log del error
-            // El usuario se puede registrar sin la obra si hay problemas
         }
     }
 
@@ -186,29 +198,39 @@ class AuthController extends Controller
      */
     public function approveArtist(Request $request, $userId)
     {
-        $user = User::findOrFail($userId);
+        try {
+            $user = User::findOrFail($userId);
 
-        if ($user->role !== 'pending_artist') {
-            return back()->with('error', 'El usuario no tiene una solicitud de artista pendiente.');
+            if ($user->role !== 'pending_artist') {
+                return back()->with('error', 'El usuario no tiene una solicitud de artista pendiente.');
+            }
+
+            // Cambiar rol a artista
+            $user->role = 'artist';
+            $user->save();
+
+            // Actualizar estado de la solicitud
+            $artistRequest = ArtistRequest::where('user_id', $userId)->first();
+            if ($artistRequest) {
+                $artistRequest->status = 'approved';
+                $artistRequest->approved_at = now();
+                $artistRequest->save();
+            }
+
+            // Aprobar todas las obras pendientes del usuario
+            Artwork::where('user_id', $userId)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'approved',
+                    'approved_at' => now()
+                ]);
+
+            return back()->with('success', 'Artista aprobado exitosamente.');
+
+        } catch (\Exception $e) {
+            Log::error('Error al aprobar artista: ' . $e->getMessage());
+            return back()->with('error', 'Error al procesar la aprobación.');
         }
-
-        // Cambiar rol a artista
-        $user->role = 'artist';
-        $user->save();
-
-        // Actualizar estado de la solicitud
-        $artistRequest = ArtistRequest::where('user_id', $userId)->first();
-        if ($artistRequest) {
-            $artistRequest->status = 'approved';
-            $artistRequest->save();
-        }
-
-        // Aprobar todas las obras pendientes del usuario
-        Artwork::where('user_id', $userId)
-            ->where('status', 'pending')
-            ->update(['status' => 'approved']);
-
-        return back()->with('success', 'Artista aprobado exitosamente.');
     }
 
     /**
@@ -216,28 +238,70 @@ class AuthController extends Controller
      */
     public function rejectArtist(Request $request, $userId)
     {
-        $user = User::findOrFail($userId);
+        try {
+            $user = User::findOrFail($userId);
 
-        if ($user->role !== 'pending_artist') {
-            return back()->with('error', 'El usuario no tiene una solicitud de artista pendiente.');
+            if ($user->role !== 'pending_artist') {
+                return back()->with('error', 'El usuario no tiene una solicitud de artista pendiente.');
+            }
+
+            // Cambiar rol a usuario normal
+            $user->role = 'user';
+            $user->save();
+
+            // Actualizar estado de la solicitud
+            $artistRequest = ArtistRequest::where('user_id', $userId)->first();
+            if ($artistRequest) {
+                $artistRequest->status = 'rejected';
+                $artistRequest->rejected_at = now();
+                $artistRequest->save();
+            }
+
+            // Rechazar todas las obras pendientes del usuario
+            Artwork::where('user_id', $userId)
+                ->where('status', 'pending')
+                ->update([
+                    'status' => 'rejected',
+                    'rejected_at' => now()
+                ]);
+
+            return back()->with('success', 'Solicitud de artista rechazada.');
+
+        } catch (\Exception $e) {
+            Log::error('Error al rechazar artista: ' . $e->getMessage());
+            return back()->with('error', 'Error al procesar el rechazo.');
+        }
+    }
+
+    /**
+     * Mostrar solicitudes de artistas pendientes (para admin)
+     */
+    public function showPendingArtists()
+    {
+        $pendingRequests = ArtistRequest::where('status', 'pending')
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('admin.pending-artists', compact('pendingRequests'));
+    }
+
+    /**
+     * Dashboard principal
+     */
+    public function dashboard()
+    {
+        $user = Auth::user();
+        $pendingRequests = collect(); // Inicializar como colección vacía
+
+        // Si es admin, obtener solicitudes pendientes
+        if ($user->role === 'admin') {
+            $pendingRequests = ArtistRequest::where('status', 'pending')
+                ->with('user')
+                ->orderBy('created_at', 'desc')
+                ->get();
         }
 
-        // Cambiar rol a usuario normal
-        $user->role = 'user';
-        $user->save();
-
-        // Actualizar estado de la solicitud
-        $artistRequest = ArtistRequest::where('user_id', $userId)->first();
-        if ($artistRequest) {
-            $artistRequest->status = 'rejected';
-            $artistRequest->save();
-        }
-
-        // Rechazar todas las obras pendientes del usuario
-        Artwork::where('user_id', $userId)
-            ->where('status', 'pending')
-            ->update(['status' => 'rejected']);
-
-        return back()->with('success', 'Solicitud de artista rechazada.');
+        return view('dashboard', compact('pendingRequests'));
     }
 }
