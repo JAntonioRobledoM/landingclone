@@ -23,10 +23,12 @@ class ArtistRequest extends Model
         'admin_notes',
         'approved_at',
         'approved_by',
+        'rejected_at',
     ];
 
     protected $casts = [
         'approved_at' => 'datetime',
+        'rejected_at' => 'datetime',
         'artwork_file_size' => 'integer',
     ];
 
@@ -52,7 +54,13 @@ class ArtistRequest extends Model
     public function getArtworkImageUrlAttribute()
     {
         if ($this->artwork_image_path) {
-            return Storage::url($this->artwork_image_path);
+            // Verificar si el archivo existe antes de devolver la URL
+            if (Storage::disk('public')->exists($this->artwork_image_path)) {
+                return Storage::url($this->artwork_image_path);
+            }
+            
+            // Si no existe el archivo, devolver una imagen por defecto o null
+            return asset('images/no-image.png'); // o return null;
         }
         return null;
     }
@@ -63,7 +71,7 @@ class ArtistRequest extends Model
     public function getFormattedFileSizeAttribute()
     {
         if (!$this->artwork_file_size) {
-            return null;
+            return 'N/A';
         }
 
         $bytes = $this->artwork_file_size;
@@ -81,6 +89,54 @@ class ArtistRequest extends Model
      */
     public function hasArtwork()
     {
-        return !empty($this->artwork_image_path);
+        return !empty($this->artwork_image_path) && !empty($this->artwork_title);
+    }
+
+    /**
+     * Obtener el nombre completo del usuario
+     */
+    public function getUserFullNameAttribute()
+    {
+        return $this->user ? $this->user->first_name . ' ' . $this->user->last_name : 'Usuario eliminado';
+    }
+
+    /**
+     * Obtener el username del usuario
+     */
+    public function getUsernameAttribute()
+    {
+        return $this->user ? $this->user->username : 'N/A';
+    }
+
+    /**
+     * Obtener el email del usuario
+     */
+    public function getUserEmailAttribute()
+    {
+        return $this->user ? $this->user->email : 'N/A';
+    }
+
+    /**
+     * Scope para solicitudes pendientes
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
+    /**
+     * Scope para solicitudes aprobadas
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('status', 'approved');
+    }
+
+    /**
+     * Scope para solicitudes rechazadas
+     */
+    public function scopeRejected($query)
+    {
+        return $query->where('status', 'rejected');
     }
 }
