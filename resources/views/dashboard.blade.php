@@ -59,7 +59,7 @@
     <div class="container py-5">
         @if(Auth::user()->role == 'pending_artist')
             <!-- Mensaje para artistas en lista de espera -->
-            <div class="card text-center my-5">
+            <div class="card text-center mt-2 mb-5">
                 <div class="card-body py-5">
                     <div class="mb-4">
                         <i class="bi bi-hourglass-split fs-1 text-primary"></i>

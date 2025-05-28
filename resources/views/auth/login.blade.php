@@ -51,7 +51,7 @@
     }
 
     .logo-saturada {
-    filter: saturate(1);
+        filter: saturate(1);
     }
 </style>
 @endsection

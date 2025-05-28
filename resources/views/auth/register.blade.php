@@ -50,6 +50,10 @@
             display: none;
         }
 
+        .logo-saturada {
+            filter: saturate(1);
+        }
+
         /* Estilos para los campos específicos de artista */
         .artist-fields {
             display: none;
@@ -137,7 +141,7 @@
                         <!-- Logotipo -->
                         <div class="text-center">
                             <a href="{{ route('home') }}">
-                                <img src="{{ asset('images/logo-light.png') }}" width="125" height="125" alt="logo">
+                                <img src="{{ asset('images/logo-light.png') }}" width="125" height="125" class="logo-saturada" alt="logo">
                             </a>
                         </div>
 
