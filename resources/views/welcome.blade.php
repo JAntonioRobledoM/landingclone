@@ -68,7 +68,7 @@
         margin-top: 60px; 
         position: relative;
         z-index: 10;
-        margin-bottom: 120px; 
+        margin-bottom: 60px; 
     }
     
     .section-title {
@@ -81,8 +81,8 @@
     .options-container {
         display: flex;
         justify-content: space-between;
-        margin-top: 40px;
-        margin-bottom: 60px;
+        margin-top: 15px;
+        margin-bottom: 15px;
     }
     
     .option-box {
@@ -124,7 +124,7 @@
     
     .login-section {
         text-align: center;
-        margin-top: 80px;
+        margin-top: 40px;
         padding-top: 40px;
         border-top: 1px solid #eee;
     }
@@ -140,10 +140,12 @@
         border: 2px solid #6c5dd3;
         color: #6c5dd3;
         background-color: transparent;
-        padding: 12px 40px;
+        padding: 15px 25px;
         border-radius: 50px;
         text-decoration: none;
         font-weight: 500;
+        font-size: 15px;
+        margin-bottom: 10px;
         transition: all 0.3s ease;
     }
     
@@ -157,8 +159,8 @@
     .features-section {
         display: flex;
         justify-content: space-around;
-        margin-top: 120px; 
-        margin-bottom: 80px; 
+        margin-top: 70px; 
+        margin-bottom: 60px; 
     }
     
     .feature-item {
@@ -205,8 +207,8 @@
         <div class="container">
             <div class="logo-section">
                 <img src="{{ asset('images/logo-light.png') }}" alt="Everlasting Art Logo" class="logo-img">
-                <div class="coming-soon">Próximamente</div>
             </div>
+            <div class="coming-soon">Próximamente</div>
             <h1 class="hero-title">Everlasting Art</h1>
             <p class="hero-subtitle">La nueva plataforma que conectará artistas con amantes del arte está en desarrollo. Únete a nuestra lista de espera para ser de los primeros en acceder.</p>
         </div>
@@ -214,19 +216,17 @@
 
     <div class="content-container">
         <!-- Main Card -->
-        <div class="main-card">
-            <h1 class="section-title">Arte</h1>
-            
+        <div class="main-card">            
             <div class="options-container">
                 <!-- Opción para usuarios -->
-                <div class="option-box">
+                <div class="option-box text-center">
                     <h2 class="option-title">Descubre y colecciona creaciones únicas de artistas de todo el mundo.</h2>
                     <p class="option-description">Explora obras excepcionales y conecta con los artistas detrás de ellas.</p>
                     <a href="{{ route('register') }}" class="option-button">Unirme como Usuario</a>
                 </div>
                 
                 <!-- Opción para artistas -->
-                <div class="option-box">
+                <div class="option-box text-center">
                     <h2 class="option-title">Comparte tus creaciones y conecta con personas que aprecien tu arte.</h2>
                     <p class="option-description">Muestra tu talento al mundo y forma parte de una comunidad creativa vibrante.</p>
                     <a href="{{ route('register') }}?role=artist" class="option-button">Unirme como Artista</a>
@@ -265,11 +265,6 @@
                 <h3 class="feature-title">Notificaciones</h3>
                 <p class="feature-desc">Mantente informado sobre nuevas características y lanzamientos.</p>
             </div>
-        </div>
-        
-        <!-- Footer -->
-        <div class="footer">
-            <p>© {{ date('Y') }} Everlasting Art. Todos los derechos reservados.</p>
         </div>
     </div>
 @endsection

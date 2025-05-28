@@ -84,9 +84,12 @@
                                         <div class="foot-subscribe mb-3">
                                             <label class="form-label">Escribe tu email<span class="text-danger">*</span></label>
                                             <div class="d-flex align-items-center gap-2">
-                                                <div class="form-icon position-relative flex-grow-1 email-input-wrapper">
-                                                    <i class="bi bi-envelope icons" style="top: 15px; left: 15px; position: absolute;"></i>
-                                                    <input type="email" name="email" id="emailsubscribe" class="form-control ps-5 rounded" placeholder="Email:" required>
+                                                <div class="form-icon position-relative email-input-wrapper w-50">
+                                                    <i class="bi bi-envelope icons" style="top: 12px; left: 15px; position: absolute;"></i>
+                                                    <input type="email" name="email" id="emailsubscribe"
+                                                        class="form-control ps-5 rounded"
+                                                        placeholder="Email:" required
+                                                        style="max-width: 550px;">
                                                 </div>
                                                 <div>
                                                     <input type="submit" id="submitsubscribe" name="send" class="btn btn-suscripcion" value="Suscríbete">
@@ -105,33 +108,20 @@
     
     <!-- PARTE INFERIOR DEL FOOTER -->
     <div class="footer-py-30 footer-bar">
-        <div class="container text-center">
-            <div class="row align-items-center">
-                <div class="col-sm-6">
-                    <div class="text-sm-start">
-                        <p class="mb-0">© {{ date('Y') }} Everlasting Art <i class="bi bi-heart-fill text-danger"></i></p>
-                    </div>
-                </div>
-                
-                <div class="col-sm-6 mt-4 mt-sm-0 pt-2 pt-sm-0">
-                    <ul class="list-unstyled footer-list text-sm-end mb-0">
-                        <li class="list-inline-item mb-0"><a href="{{ route('home') }}" class="text-foot me-2">Privacidad</a></li>
-                        <li class="list-inline-item mb-0"><a href="{{ route('home') }}" class="text-foot me-2">Términos</a></li>
-                        <li class="list-inline-item mb-0"><a href="{{ route('home') }}" class="text-foot me-2">Centro de Ayuda</a></li>
-                        <li class="list-inline-item mb-0"><a href="{{ route('home') }}" class="text-foot">Contacto</a></li>
-                    </ul>
-                </div>
-            </div>
+        <div class="container">
+            <p class="mb-0 text-center">© 2025 Everlasting Art. Todos los derechos reservados.</p>
         </div>
     </div>
 </footer>
 
-<!-- Botón Volver Arriba -->
+<!--
+ Botón Volver Arriba
 <a href="#" id="back-to-top" class="back-to-top rounded-pill" style="display: none;">
     <i class="bi bi-arrow-up"></i>
 </a>
 
-<!-- Script para el botón Volver Arriba -->
+
+Script para el botón Volver Arriba
 <script>
     // Mostrar/ocultar el botón "Volver arriba" según el scroll
     document.addEventListener('DOMContentLoaded', function() {
@@ -155,3 +145,4 @@
         });
     });
 </script>
+-->
