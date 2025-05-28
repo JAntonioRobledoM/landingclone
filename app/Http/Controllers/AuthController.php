@@ -69,6 +69,20 @@ class AuthController extends Controller
             'terms' => 'required|accepted',
         ];
 
+        $messages = [
+            'first_name.required' => 'El nombre es obligatorio.',
+            'last_name.required' => 'El apellido es obligatorio.',
+            'username.required' => 'El nombre de usuario es obligatorio.',
+            'username.unique' => 'Este nombre de usuario ya está en uso.',
+            'email.required' => 'El email es obligatorio.',
+            'email.unique' => 'Este email ya está registrado.',
+            'password.required' => 'La contraseña es obligatoria.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+            'birthday.required' => 'La fecha de nacimiento es obligatoria.',
+            'terms.required' => 'Debes aceptar los términos y condiciones.',
+        ];
+
         // Validaciones adicionales para artistas
         if ($request->role === 'artist') {
             $rules = array_merge($rules, [
@@ -76,14 +90,44 @@ class AuthController extends Controller
                 'artwork_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
                 'artwork_title' => 'required|string|max:255',
                 'artwork_description' => 'nullable|string|max:1000',
+                'social_media_type' => 'nullable|in:none,instagram,facebook',
+                'instagram_url' => 'nullable|url|regex:/^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9_.]+\/?$/',
+                'facebook_url' => 'nullable|url|regex:/^https?:\/\/(www\.)?facebook\.com\/[a-zA-Z0-9_.]+\/?$/',
+            ]);
+
+            $messages = array_merge($messages, [
+                'motivation.required' => 'Debes explicar por qué quieres ser artista.',
+                'artwork_image.required' => 'Debes subir una obra para tu portafolio.',
+                'artwork_image.image' => 'El archivo debe ser una imagen.',
+                'artwork_image.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg, gif o webp.',
+                'artwork_image.max' => 'La imagen no puede ser mayor a 5MB.',
+                'artwork_title.required' => 'El título de la obra es obligatorio.',
+                'instagram_url.regex' => 'La URL de Instagram debe ser válida.',
+                'facebook_url.regex' => 'La URL de Facebook debe ser válida.',
             ]);
         }
 
-        $validatedData = $request->validate($rules);
+        $validatedData = $request->validate($rules, $messages);
+
+        // Validación personalizada para redes sociales
+        if ($request->role === 'artist' && $request->social_media_type !== 'none') {
+            if ($request->social_media_type === 'instagram' && !$request->filled('instagram_url')) {
+                return back()->withErrors(['instagram_url' => 'Debes proporcionar tu URL de Instagram.'])->withInput();
+            }
+            
+            if ($request->social_media_type === 'facebook' && !$request->filled('facebook_url')) {
+                return back()->withErrors(['facebook_url' => 'Debes proporcionar tu URL de Facebook.'])->withInput();
+            }
+
+            // Asegurar que solo se proporcione una red social
+            if ($request->filled('instagram_url') && $request->filled('facebook_url')) {
+                return back()->withErrors(['social_media' => 'Solo puedes agregar una red social a la vez.'])->withInput();
+            }
+        }
 
         try {
-            // Crear usuario base
-            $user = User::create([
+            // Preparar datos del usuario
+            $userData = [
                 'first_name' => $validatedData['first_name'],
                 'last_name' => $validatedData['last_name'],
                 'username' => $validatedData['username'],
@@ -91,7 +135,19 @@ class AuthController extends Controller
                 'birthday' => $validatedData['birthday'],
                 'password' => Hash::make($validatedData['password']),
                 'role' => $request->role === 'artist' ? 'pending_artist' : 'user',
-            ]);
+            ];
+
+            // Agregar redes sociales si es artista
+            if ($request->role === 'artist') {
+                if ($request->social_media_type === 'instagram' && $request->filled('instagram_url')) {
+                    $userData['instagram_url'] = $request->instagram_url;
+                } elseif ($request->social_media_type === 'facebook' && $request->filled('facebook_url')) {
+                    $userData['facebook_url'] = $request->facebook_url;
+                }
+            }
+
+            // Crear usuario
+            $user = User::create($userData);
 
             // Si es artista, crear solicitud con obra
             if ($request->role === 'artist') {

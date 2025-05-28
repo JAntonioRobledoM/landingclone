@@ -81,6 +81,47 @@
             border-color: #0d6efd;
             background-color: #f8f9fa;
         }
+
+        /* Estilos para la selección de red social */
+        .social-media-selection {
+            border: 2px solid #dee2e6;
+            border-radius: 0.375rem;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .social-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #dee2e6;
+            border-radius: 0.375rem;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .social-option:hover {
+            background-color: #f8f9fa;
+        }
+
+        .social-option.selected {
+            border-color: #0d6efd;
+            background-color: #e7f3ff;
+        }
+
+        .social-option input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        .social-url-input {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .social-url-input.show {
+            display: block;
+        }
     </style>
 @endsection
 
@@ -198,6 +239,69 @@
                                                 artista. Esta información nos ayudará a conocerte mejor.</small>
                                         </div>
 
+                                        <!-- Selección de Red Social -->
+                                        <div class="social-media-selection">
+                                            <label class="form-label mb-3">
+                                                <i class="fas fa-share-alt me-2"></i>Red Social (Opcional)
+                                            </label>
+                                            <small class="text-muted d-block mb-3">Puedes agregar tu Instagram o Facebook para que los usuarios puedan seguirte</small>
+                                            
+                                            <div class="social-option" onclick="selectSocialMedia('none')">
+                                                <input type="radio" name="social_media_type" value="none" id="socialNone" 
+                                                    {{ old('social_media_type', 'none') === 'none' ? 'checked' : '' }}>
+                                                <label for="socialNone" class="mb-0">
+                                                    <i class="fas fa-times-circle me-2 text-muted"></i>
+                                                    No agregar red social
+                                                </label>
+                                            </div>
+
+                                            <div class="social-option" onclick="selectSocialMedia('instagram')">
+                                                <input type="radio" name="social_media_type" value="instagram" id="socialInstagram"
+                                                    {{ old('social_media_type') === 'instagram' ? 'checked' : '' }}>
+                                                <label for="socialInstagram" class="mb-0">
+                                                    <i class="fab fa-instagram me-2 text-danger"></i>
+                                                    Instagram
+                                                </label>
+                                            </div>
+
+                                            <div class="social-url-input" id="instagramUrlInput">
+                                                <div class="form-floating">
+                                                    <input type="url" class="form-control @error('instagram_url') is-invalid @enderror"
+                                                        id="instagramUrl" name="instagram_url" 
+                                                        placeholder="https://instagram.com/tu_usuario"
+                                                        value="{{ old('instagram_url') }}">
+                                                    <label for="instagramUrl">URL de Instagram</label>
+                                                </div>
+                                                <small class="text-muted">Ejemplo: https://instagram.com/tu_usuario</small>
+                                                @error('instagram_url')
+                                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+
+                                            <div class="social-option" onclick="selectSocialMedia('facebook')">
+                                                <input type="radio" name="social_media_type" value="facebook" id="socialFacebook"
+                                                    {{ old('social_media_type') === 'facebook' ? 'checked' : '' }}>
+                                                <label for="socialFacebook" class="mb-0">
+                                                    <i class="fab fa-facebook me-2 text-primary"></i>
+                                                    Facebook
+                                                </label>
+                                            </div>
+
+                                            <div class="social-url-input" id="facebookUrlInput">
+                                                <div class="form-floating">
+                                                    <input type="url" class="form-control @error('facebook_url') is-invalid @enderror"
+                                                        id="facebookUrl" name="facebook_url" 
+                                                        placeholder="https://facebook.com/tu_usuario"
+                                                        value="{{ old('facebook_url') }}">
+                                                    <label for="facebookUrl">URL de Facebook</label>
+                                                </div>
+                                                <small class="text-muted">Ejemplo: https://facebook.com/tu_usuario</small>
+                                                @error('facebook_url')
+                                                    <div class="invalid-feedback d-block">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+                                        </div>
+
                                         <!-- Subida de obra -->
                                         <div class="mb-3">
                                             <label class="form-label">Sube una obra para tu portafolio</label>
@@ -292,6 +396,9 @@
 
             // Configurar drag and drop
             setupDragAndDrop();
+
+            // Inicializar selección de red social
+            initializeSocialMediaSelection();
         });
 
         // Función para seleccionar el rol
@@ -314,6 +421,8 @@
                 document.getElementById('artworkTitle').required = false;
                 // Limpiar preview de imagen
                 document.getElementById('imagePreview').innerHTML = '';
+                // Resetear selección de red social
+                selectSocialMedia('none');
             }
 
             // Actualizar estilos de los botones
@@ -329,6 +438,57 @@
 
                 document.getElementById('roleUserBtn').classList.remove('btn-primary');
                 document.getElementById('roleUserBtn').classList.add('btn-outline-primary');
+            }
+        }
+
+        // Función para seleccionar red social
+        function selectSocialMedia(type) {
+            // Remover clases selected de todas las opciones
+            document.querySelectorAll('.social-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+
+            // Ocultar todos los inputs de URL
+            document.getElementById('instagramUrlInput').classList.remove('show');
+            document.getElementById('facebookUrlInput').classList.remove('show');
+
+            // Limpiar valores de los campos no seleccionados
+            if (type !== 'instagram') {
+                document.getElementById('instagramUrl').value = '';
+            }
+            if (type !== 'facebook') {
+                document.getElementById('facebookUrl').value = '';
+            }
+
+            // Marcar la opción seleccionada
+            const selectedRadio = document.querySelector(`input[name="social_media_type"][value="${type}"]`);
+            if (selectedRadio) {
+                selectedRadio.checked = true;
+                selectedRadio.closest('.social-option').classList.add('selected');
+            }
+
+            // Mostrar el input correspondiente
+            if (type === 'instagram') {
+                document.getElementById('instagramUrlInput').classList.add('show');
+                document.getElementById('instagramUrl').focus();
+            } else if (type === 'facebook') {
+                document.getElementById('facebookUrlInput').classList.add('show');
+                document.getElementById('facebookUrl').focus();
+            }
+        }
+
+        // Inicializar la selección de red social basada en old values
+        function initializeSocialMediaSelection() {
+            const oldSocialType = '{{ old('social_media_type', 'none') }}';
+            const oldInstagram = '{{ old('instagram_url') }}';
+            const oldFacebook = '{{ old('facebook_url') }}';
+
+            if (oldInstagram && oldSocialType === 'instagram') {
+                selectSocialMedia('instagram');
+            } else if (oldFacebook && oldSocialType === 'facebook') {
+                selectSocialMedia('facebook');
+            } else {
+                selectSocialMedia('none');
             }
         }
 
@@ -390,6 +550,35 @@
                     fileInput.files = files;
                     previewImage(fileInput);
                 }
+            }
+        }
+
+        // Validación en tiempo real de URLs de redes sociales
+        document.getElementById('instagramUrl').addEventListener('input', function() {
+            validateSocialUrl(this, 'instagram');
+        });
+
+        document.getElementById('facebookUrl').addEventListener('input', function() {
+            validateSocialUrl(this, 'facebook');
+        });
+
+        function validateSocialUrl(input, platform) {
+            const value = input.value.trim();
+            if (!value) return;
+
+            let isValid = false;
+            if (platform === 'instagram') {
+                isValid = /^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9_.]+\/?$/.test(value);
+            } else if (platform === 'facebook') {
+                isValid = /^https?:\/\/(www\.)?facebook\.com\/[a-zA-Z0-9_.]+\/?$/.test(value);
+            }
+
+            if (isValid) {
+                input.classList.remove('is-invalid');
+                input.classList.add('is-valid');
+            } else {
+                input.classList.remove('is-valid');
+                input.classList.add('is-invalid');
             }
         }
     </script>

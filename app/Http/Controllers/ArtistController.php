@@ -78,7 +78,18 @@ class ArtistController extends Controller
             'tlf' => 'nullable|string|max:45',
             'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'banner_url' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'social_media_type' => 'nullable|in:instagram,facebook',
+            'instagram_url' => 'nullable|url|regex:/^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9_.]+\/?$/',
+            'facebook_url' => 'nullable|url|regex:/^https?:\/\/(www\.)?facebook\.com\/[a-zA-Z0-9_.]+\/?$/',
+        ], [
+            'instagram_url.regex' => 'La URL de Instagram debe ser válida (ejemplo: https://instagram.com/usuario)',
+            'facebook_url.regex' => 'La URL de Facebook debe ser válida (ejemplo: https://facebook.com/usuario)',
         ]);
+        
+        // Validación personalizada: solo una red social a la vez
+        if ($request->filled('instagram_url') && $request->filled('facebook_url')) {
+            return back()->withErrors(['social_media' => 'Solo puedes agregar una red social a la vez (Instagram o Facebook).'])->withInput();
+        }
         
         $user->first_name = $request->first_name;
         $user->last_name = $request->last_name;
@@ -86,6 +97,17 @@ class ArtistController extends Controller
         $user->gender = $request->gender;
         $user->description = $request->description;
         $user->tlf = $request->tlf;
+        
+        // Limpiar ambas redes sociales primero
+        $user->instagram_url = null;
+        $user->facebook_url = null;
+        
+        // Asignar la red social seleccionada
+        if ($request->filled('instagram_url')) {
+            $user->instagram_url = $request->instagram_url;
+        } elseif ($request->filled('facebook_url')) {
+            $user->facebook_url = $request->facebook_url;
+        }
         
         // Procesar imagen de perfil si se ha subido
         if ($request->hasFile('profile_picture')) {
