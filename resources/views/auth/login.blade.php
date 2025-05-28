@@ -49,6 +49,10 @@
     footer {
         display: none;
     }
+
+    .logo-saturada {
+    filter: saturate(1);
+    }
 </style>
 @endsection
 
@@ -64,7 +68,7 @@
                     <!-- Logotipo -->
                     <div class="text-center">
                         <a href="{{ route('home') }}">
-                            <img src="{{ asset('images/logo-light.png') }}" width="125" height="125" alt="logo">
+                            <img src="{{ asset('images/logo-light.png') }}" width="125" height="125" class="logo-saturada" alt="logo">
                         </a>
                     </div>
                     
@@ -169,7 +173,7 @@
                     </div>
                     
                     <!-- © DEBAJO DEL CUADRO BLANCO -->
-                    <div class="text-center text-black-50">
+                    <div class="text-center text-black">
                         <small class="mb-0">
                             © {{ date('Y') }} Everlasting Art
                         </small>
