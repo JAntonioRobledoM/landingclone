@@ -510,9 +510,6 @@
                     <h2 class="mb-4">Bienvenido a Everlasting Art</h2>
                     <p class="lead mb-4">Próximamente tendrás acceso a disfrutar del arte en nuestra plataforma. Estamos
                         trabajando para ofrecerte la mejor experiencia.</p>
-                    <a href="{{ route('register') }}" class="btn btn-outline-primary btn-lg">
-                        <i class="bi bi-person-plus me-2"></i>¿Quieres ser artista?
-                    </a>
                 </div>
             </div>
         @endif
