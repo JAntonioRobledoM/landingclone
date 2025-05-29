@@ -210,7 +210,7 @@
             </div>
             <div class="coming-soon">Próximamente</div>
             <h1 class="hero-title">Everlasting Art</h1>
-            <p class="hero-subtitle">La plataforma que conecta a artistas y amantes del arte esta en camino. Unete a nuestra lista de espera y se de los primeros en impulsar esta revolución artística que cambiará por completo como se comparte, se apoya y se vive el arte.</p>
+            <p class="hero-subtitle">La plataforma que conecta a artistas y amantes del arte esta en camino. Unete a nuestra lista de espera y se de los primeros en impulsar la revolución artística que cambiará por completo como se comparte, se apoya y se vive el arte.</p>
         </div>
     </section>
 
@@ -255,7 +255,7 @@
                     <i class="bi bi-star-fill"></i>
                 </div>
                 <h3 class="feature-title">Contenido exclusivo</h3>
-                <p class="feature-desc">Accede a a funciones, colecciones y eventos especiales solo para miembros.</p>
+                <p class="feature-desc">Accede a funciones, colecciones y eventos especiales solo para miembros.</p>
             </div>
             
             <div class="feature-item">
