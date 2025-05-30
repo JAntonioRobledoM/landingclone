@@ -82,20 +82,19 @@ return [
             'replace_placeholders' => true,
         ],
 
-        'papertrail' => [
-            'driver' => 'monolog',
-            'level' => env('LOG_LEVEL', 'debug'),
-            'handler' => env('LOG_PAPERTRAIL_HANDLER', SyslogUdpHandler::class),
-            'handler_with' => [
-                'host' => env('PAPERTRAIL_URL', '127.0.0.1'),
-                'port' => env('PAPERTRAIL_PORT', 12345),
-                // Corrección aquí: usar un valor predeterminado para evitar el error
-                'connectionString' => env('PAPERTRAIL_URL') && env('PAPERTRAIL_PORT') 
-                    ? 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT') 
-                    : 'tls://127.0.0.1:12345',
-            ],
-            'processors' => [PsrLogMessageProcessor::class],
-        ],
+        // 'papertrail' => [
+//     'driver' => 'monolog',
+//     'level' => env('LOG_LEVEL', 'debug'),
+//     'handler' => env('LOG_PAPERTRAIL_HANDLER', SyslogUdpHandler::class),
+//     'handler_with' => [
+//         'host' => env('PAPERTRAIL_URL', '127.0.0.1'),
+//         'port' => env('PAPERTRAIL_PORT', 12345),
+//         'connectionString' => env('PAPERTRAIL_URL') && env('PAPERTRAIL_PORT') 
+//             ? 'tls://'.env('PAPERTRAIL_URL').':'.env('PAPERTRAIL_PORT') 
+//             : 'tls://127.0.0.1:12345',
+//     ],
+//     'processors' => [PsrLogMessageProcessor::class],
+// ],
 
         'stderr' => [
             'driver' => 'monolog',
