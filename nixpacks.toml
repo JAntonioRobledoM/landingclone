@@ -1,0 +1,12 @@
+[phases.setup]
+aptPkgs = ["default-mysql-client"]
+
+[phases.build]
+cmds = [
+  "composer install --no-dev --optimize-autoloader",
+  "cp .env.example .env || true",
+  "php artisan key:generate --force"
+]
+
+[phases.deploy]
+startCmd = "php artisan migrate --force && php artisan serve --host=0.0.0.0 --port=8080"
