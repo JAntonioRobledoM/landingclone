@@ -357,7 +357,7 @@
                                         </label>
                                     </div>
 
-                                    <button class="btn btn-primary rounded-md w-100" type="submit">
+                                    <button class="btn btn-primary rounded-md w-auto" type="submit">
                                         Registrarse
                                     </button>
 
