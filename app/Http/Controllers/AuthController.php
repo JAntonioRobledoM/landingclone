@@ -87,8 +87,9 @@ class AuthController extends Controller
         if ($request->role === 'artist') {
             $rules = array_merge($rules, [
                 'motivation' => 'required|string|max:1000',
-                'artwork_image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // 5MB max
-                'artwork_title' => 'required|string|max:255',
+                'tlf' => 'nullable|string|max:20', // Campo teléfono opcional
+                'artwork_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:5120', // Obra opcional
+                'artwork_title' => 'required_with:artwork_image|string|max:255', // Título requerido solo si hay imagen
                 'artwork_description' => 'nullable|string|max:1000',
                 'social_media_type' => 'nullable|in:none,instagram,facebook',
                 'instagram_url' => 'nullable|url|regex:/^https?:\/\/(www\.)?instagram\.com\/[a-zA-Z0-9_.]+\/?$/',
@@ -97,11 +98,11 @@ class AuthController extends Controller
 
             $messages = array_merge($messages, [
                 'motivation.required' => 'Debes explicar por qué quieres ser artista.',
-                'artwork_image.required' => 'Debes subir una obra para tu portafolio.',
+                'tlf.max' => 'El número de teléfono no puede exceder los 20 caracteres.',
                 'artwork_image.image' => 'El archivo debe ser una imagen.',
                 'artwork_image.mimes' => 'La imagen debe ser de tipo: jpeg, png, jpg, gif o webp.',
                 'artwork_image.max' => 'La imagen no puede ser mayor a 5MB.',
-                'artwork_title.required' => 'El título de la obra es obligatorio.',
+                'artwork_title.required_with' => 'El título de la obra es obligatorio cuando subes una imagen.',
                 'instagram_url.regex' => 'La URL de Instagram debe ser válida.',
                 'facebook_url.regex' => 'La URL de Facebook debe ser válida.',
             ]);
@@ -137,6 +138,11 @@ class AuthController extends Controller
                 'role' => $request->role === 'artist' ? 'pending_artist' : 'user',
             ];
 
+            // Agregar teléfono si es artista y se proporcionó
+            if ($request->role === 'artist' && $request->filled('tlf')) {
+                $userData['tlf'] = $request->tlf;
+            }
+
             // Agregar redes sociales si es artista
             if ($request->role === 'artist') {
                 if ($request->social_media_type === 'instagram' && $request->filled('instagram_url')) {
@@ -149,7 +155,7 @@ class AuthController extends Controller
             // Crear usuario
             $user = User::create($userData);
 
-            // Si es artista, crear solicitud con obra
+            // Si es artista, crear solicitud (con o sin obra)
             if ($request->role === 'artist') {
                 $this->createArtistRequest($user, $request, $validatedData);
             }
@@ -171,20 +177,21 @@ class AuthController extends Controller
     }
 
     /**
-     * Crear solicitud de artista con obra
+     * Crear solicitud de artista (con o sin obra)
      */
     protected function createArtistRequest(User $user, Request $request, array $validatedData)
     {
         $artworkData = [
             'user_id' => $user->id,
             'motivation' => $validatedData['motivation'],
-            'artwork_title' => $validatedData['artwork_title'],
-            'artwork_description' => $validatedData['artwork_description'] ?? null,
             'status' => 'pending',
         ];
 
-        // Procesar la imagen de la obra
+        // Solo procesar obra si se subió una imagen
         if ($request->hasFile('artwork_image')) {
+            $artworkData['artwork_title'] = $validatedData['artwork_title'];
+            $artworkData['artwork_description'] = $validatedData['artwork_description'] ?? null;
+
             $imageFile = $request->file('artwork_image');
 
             // Generar nombre único para el archivo
@@ -200,17 +207,17 @@ class AuthController extends Controller
                 'artwork_mime_type' => $imageFile->getMimeType(),
                 'artwork_file_size' => $imageFile->getSize(),
             ]);
+
+            // También crear la obra en la tabla artworks para cuando sea aprobada
+            $this->saveArtwork($user, $imageFile, $validatedData);
         }
 
         // Crear la solicitud de artista
         ArtistRequest::create($artworkData);
-
-        // También crear la obra en la tabla artworks para cuando sea aprobada
-        $this->saveArtwork($user, $request->file('artwork_image'), $validatedData);
     }
 
     /**
-     * Guardar la obra de arte del registro
+     * Guardar la obra de arte del registro (solo si se proporcionó)
      */
     protected function saveArtwork(User $user, $imageFile, array $data)
     {
@@ -273,7 +280,7 @@ class AuthController extends Controller
                 $artistRequest->save();
             }
 
-            // Aprobar todas las obras pendientes del usuario
+            // Aprobar todas las obras pendientes del usuario (si las tiene)
             Artwork::where('user_id', $userId)
                 ->where('status', 'pending')
                 ->update([
@@ -313,7 +320,7 @@ class AuthController extends Controller
                 $artistRequest->save();
             }
 
-            // Rechazar todas las obras pendientes del usuario
+            // Rechazar todas las obras pendientes del usuario (si las tiene)
             Artwork::where('user_id', $userId)
                 ->where('status', 'pending')
                 ->update([

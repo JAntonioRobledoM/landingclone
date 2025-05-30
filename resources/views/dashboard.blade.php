@@ -25,6 +25,8 @@
         .badge-status {
             font-size: 0.75rem;
             padding: 0.25rem 0.5rem;
+            align-self: flex-end;
+            margin-top: 0.25rem;
         }
 
         .artwork-info {
@@ -52,12 +54,56 @@
             justify-content: center;
             flex-direction: column;
         }
+
+        .user-info-table {
+            font-size: 0.875rem;
+        }
+
+        .user-info-table td {
+            padding: 0.375rem 0.5rem;
+            border: none;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .user-info-table td:first-child {
+            font-weight: 600;
+            color: #495057;
+            width: 40%;
+        }
+
+        .phone-number {
+            color: #0d6efd;
+            text-decoration: none;
+        }
+
+        .phone-number:hover {
+            text-decoration: underline;
+        }
+
+        .no-artwork-section {
+            background-color: #fff8e1;
+            border: 1px solid #ffcc02;
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+        }
+
+        .request-type-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 5;
+        }
     </style>
 @endsection
 
 @section('content')
     <div class="container py-5">
-        @if(Auth::user()->role == 'pending_artist')
+        @php
+            $userRole = Auth::user()->role;
+        @endphp
+
+        @if($userRole === 'pending_artist')
             <!-- Mensaje para artistas en lista de espera -->
             <div class="card text-center mt-2 mb-5">
                 <div class="card-body py-5">
@@ -69,7 +115,8 @@
                         sea aprobada.</p>
                 </div>
             </div>
-        @elseif(Auth::user()->role == 'admin')
+
+        @elseif($userRole === 'admin')
             <!-- Dashboard para administradores -->
             <div class="row">
                 <div class="col-md-3">
@@ -177,7 +224,16 @@
                                 <div class="row">
                                     @foreach($pendingRequests as $request)
                                         <div class="col-lg-6 col-xl-4 mb-4">
-                                            <div class="card request-card h-100">
+                                            <div class="card request-card h-100 position-relative">
+                                                <!-- Badge indicador del tipo de solicitud -->
+                                                <span class="badge request-type-badge {{ $request->hasArtwork() ? 'bg-success' : 'bg-info' }}">
+                                                    @if($request->hasArtwork())
+                                                        <i class="bi bi-image me-1"></i>Con obra
+                                                    @else
+                                                        <i class="bi bi-person me-1"></i>Solo perfil
+                                                    @endif
+                                                </span>
+
                                                 <div class="card-header bg-light d-flex justify-content-between align-items-center">
                                                     <div>
                                                         <h6 class="mb-0">
@@ -189,6 +245,30 @@
                                                         </small>
                                                     </div>
                                                     <span class="badge badge-status bg-warning">Pendiente</span>
+                                                </div>
+
+                                                <!-- Información básica del usuario -->
+                                                <div class="px-3 pt-3">
+                                                    <table class="table table-sm user-info-table mb-2">
+                                                        <tr>
+                                                            <td><i class="bi bi-envelope me-1"></i>Email:</td>
+                                                            <td class="text-truncate">{{ $request->user->email ?? 'N/A' }}</td>
+                                                        </tr>
+                                                        @if($request->user && $request->user->tlf)
+                                                            <tr>
+                                                                <td><i class="bi bi-telephone me-1"></i>Teléfono:</td>
+                                                                <td>
+                                                                    <a href="tel:{{ $request->user->tlf }}" class="phone-number">
+                                                                        {{ $request->user->tlf }}
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                        <tr>
+                                                            <td><i class="bi bi-calendar3 me-1"></i>Solicitud:</td>
+                                                            <td>{{ $request->created_at->format('d/m/Y H:i') }}</td>
+                                                        </tr>
+                                                    </table>
                                                 </div>
 
                                                 <!-- Mostrar la obra si existe -->
@@ -213,8 +293,7 @@
                                                     <div class="px-3">
                                                         <div class="artwork-info">
                                                             <h6 class="mb-1">
-                                                                <i
-                                                                    class="bi bi-image me-1"></i>{{ $request->artwork_title ?? 'Sin título' }}
+                                                                <i class="bi bi-image me-1"></i>{{ $request->artwork_title ?? 'Sin título' }}
                                                             </h6>
                                                             @if($request->artwork_description)
                                                                 <p class="small text-muted mb-2">
@@ -224,10 +303,13 @@
                                                         </div>
                                                     </div>
                                                 @else
-                                                    <div class="text-center p-3">
-                                                        <div class="no-image-placeholder">
-                                                            <i class="bi bi-exclamation-triangle fs-2 text-muted"></i>
-                                                            <small class="text-muted">Sin obra enviada</small>
+                                                    <div class="px-3">
+                                                        <div class="no-artwork-section text-center">
+                                                            <i class="bi bi-info-circle text-warning fs-4 mb-2"></i>
+                                                            <p class="mb-0 small text-muted">
+                                                                <strong>Solicitud sin obra</strong><br>
+                                                                El artista podrá subir obras más tarde
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 @endif
@@ -240,16 +322,34 @@
                                                         </p>
                                                     </div>
 
-                                                    <div class="small text-muted mb-3">
-                                                        <div class="mb-1">
-                                                            <i class="bi bi-calendar3 me-1"></i>
-                                                            {{ $request->created_at->format('d/m/Y H:i') }}
+                                                    <!-- Información adicional del usuario -->
+                                                    @if($request->user && ($request->user->birthday || $request->user->instagram_url || $request->user->facebook_url))
+                                                        <div class="small text-muted mb-3">
+                                                            @if($request->user->birthday)
+                                                                <div class="mb-1">
+                                                                    <i class="bi bi-cake2 me-1"></i>
+                                                                    {{ $request->user->birthday->format('d/m/Y') }}
+                                                                    ({{ $request->user->birthday->age }} años)
+                                                                </div>
+                                                            @endif
+                                                            @if($request->user->instagram_url)
+                                                                <div class="mb-1">
+                                                                    <i class="bi bi-instagram me-1 text-danger"></i>
+                                                                    <a href="{{ $request->user->instagram_url }}" target="_blank" class="text-decoration-none">
+                                                                        Instagram
+                                                                    </a>
+                                                                </div>
+                                                            @endif
+                                                            @if($request->user->facebook_url)
+                                                                <div class="mb-1">
+                                                                    <i class="bi bi-facebook me-1 text-primary"></i>
+                                                                    <a href="{{ $request->user->facebook_url }}" target="_blank" class="text-decoration-none">
+                                                                        Facebook
+                                                                    </a>
+                                                                </div>
+                                                            @endif
                                                         </div>
-                                                        <div>
-                                                            <i class="bi bi-envelope me-1"></i>
-                                                            {{ $request->user->email ?? 'N/A' }}
-                                                        </div>
-                                                    </div>
+                                                    @endif
                                                 </div>
 
                                                 <div class="card-footer bg-white">
@@ -302,27 +402,59 @@
                                                                     </tr>
                                                                     <tr>
                                                                         <td><strong>Usuario:</strong></td>
-                                                                        <td>@{{ $request->user->username ?? 'N/A' }}</td>
+                                                                        <td>{{ $request->user->username ?? 'N/A' }}</td>
                                                                     </tr>
                                                                     <tr>
                                                                         <td><strong>Email:</strong></td>
                                                                         <td>{{ $request->user->email ?? 'N/A' }}</td>
                                                                     </tr>
+                                                                    @if($request->user && $request->user->tlf)
+                                                                        <tr>
+                                                                            <td><strong>Teléfono:</strong></td>
+                                                                            <td>
+                                                                                <a href="tel:{{ $request->user->tlf }}" class="phone-number">
+                                                                                    {{ $request->user->tlf }}
+                                                                                </a>
+                                                                            </td>
+                                                                        </tr>
+                                                                    @endif
+                                                                    @if($request->user && $request->user->birthday)
+                                                                        <tr>
+                                                                            <td><strong>Fecha nacimiento:</strong></td>
+                                                                            <td>{{ $request->user->birthday->format('d/m/Y') }} ({{ $request->user->birthday->age }} años)</td>
+                                                                        </tr>
+                                                                    @endif
                                                                     <tr>
                                                                         <td><strong>Fecha de registro:</strong></td>
-                                                                        <td>{{ $request->user ? $request->user->created_at->format('d/m/Y H:i') : 'N/A' }}
-                                                                        </td>
+                                                                        <td>{{ $request->user ? $request->user->created_at->format('d/m/Y H:i') : 'N/A' }}</td>
                                                                     </tr>
                                                                     <tr>
                                                                         <td><strong>Solicitud enviada:</strong></td>
                                                                         <td>{{ $request->created_at->format('d/m/Y H:i') }}</td>
                                                                     </tr>
+                                                                    @if($request->user && ($request->user->instagram_url || $request->user->facebook_url))
+                                                                        <tr>
+                                                                            <td><strong>Redes sociales:</strong></td>
+                                                                            <td>
+                                                                                @if($request->user->instagram_url)
+                                                                                    <a href="{{ $request->user->instagram_url }}" target="_blank" class="btn btn-sm btn-outline-danger me-1">
+                                                                                        <i class="bi bi-instagram"></i> Instagram
+                                                                                    </a>
+                                                                                @endif
+                                                                                @if($request->user->facebook_url)
+                                                                                    <a href="{{ $request->user->facebook_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                                                        <i class="bi bi-facebook"></i> Facebook
+                                                                                    </a>
+                                                                                @endif
+                                                                            </td>
+                                                                        </tr>
+                                                                    @endif
                                                                 </table>
                                                             </div>
 
                                                             <!-- Obra enviada -->
-                                                            @if($request->hasArtwork())
-                                                                <div class="col-md-6">
+                                                            <div class="col-md-6">
+                                                                @if($request->hasArtwork())
                                                                     <h6><i class="bi bi-image me-1"></i>Obra Enviada</h6>
                                                                     <div class="text-center mb-3">
                                                                         @if($request->artwork_image_url)
@@ -366,8 +498,14 @@
                                                                             <p class="small">{{ $request->artwork_description }}</p>
                                                                         </div>
                                                                     @endif
-                                                                </div>
-                                                            @endif
+                                                                @else
+                                                                    <h6><i class="bi bi-info-circle me-1"></i>Solicitud sin obra</h6>
+                                                                    <div class="alert alert-info">
+                                                                        <i class="bi bi-info-circle me-2"></i>
+                                                                        Este artista ha enviado su solicitud sin obra de muestra. Podrá subir obras una vez aprobado.
+                                                                    </div>
+                                                                @endif
+                                                            </div>
                                                         </div>
 
                                                         <!-- Motivación completa -->
@@ -410,8 +548,12 @@
                                                         <div class="modal-body">
                                                             <div class="alert alert-success">
                                                                 <i class="bi bi-info-circle me-2"></i>
-                                                                Al aprobar esta solicitud, el usuario será promovido a artista y su obra
-                                                                será añadida automáticamente a su galería.
+                                                                Al aprobar esta solicitud, el usuario será promovido a artista
+                                                                @if($request->hasArtwork())
+                                                                    y su obra será añadida automáticamente a su galería.
+                                                                @else
+                                                                    y podrá empezar a subir obras inmediatamente.
+                                                                @endif
                                                             </div>
                                                             <p>¿Estás seguro de que deseas aprobar a
                                                                 <strong>{{ $request->user->username ?? 'este usuario' }}</strong> como
@@ -486,7 +628,7 @@
                     </div>
                 </div>
             </div>
-        @elseif(Auth::user()->role == 'artist')
+        @elseif($userRole === 'artist')
             <!-- Mensaje para artistas aprobados -->
             <div class="card text-center my-5">
                 <div class="card-body py-5">
@@ -500,7 +642,8 @@
                     </a>
                 </div>
             </div>
-        @else
+
+        @elseif($userRole === 'user')
             <!-- Mensaje para usuarios normales -->
             <div class="card text-center my-5">
                 <div class="card-body py-5">
@@ -510,6 +653,19 @@
                     <h2 class="mb-4">Bienvenido a Everlasting Art</h2>
                     <p class="lead mb-4">Próximamente tendrás acceso a disfrutar del arte en nuestra plataforma. Estamos
                         trabajando para ofrecerte la mejor experiencia.</p>
+                </div>
+            </div>
+
+        @else
+            <!-- Fallback para roles no reconocidos -->
+            <div class="card text-center my-5">
+                <div class="card-body py-5">
+                    <div class="mb-4">
+                        <i class="bi bi-question-circle fs-1 text-warning"></i>
+                    </div>
+                    <h2 class="mb-4">Rol no reconocido</h2>
+                    <p class="lead mb-4">Por favor, contacta con el administrador para resolver este problema.</p>
+                    <p class="text-muted">Rol actual: <strong>{{ $userRole }}</strong></p>
                 </div>
             </div>
         @endif
@@ -646,5 +802,26 @@
                 callback();
             }
         }
+
+        // Función para copiar teléfono al portapapeles
+        function copyPhone(phone) {
+            navigator.clipboard.writeText(phone).then(function() {
+                showSuccessMessage('Número de teléfono copiado al portapapeles');
+            }).catch(function(err) {
+                console.error('Error al copiar: ', err);
+            });
+        }
+
+        // Agregar eventos de clic a los números de teléfono para copiar
+        document.addEventListener('DOMContentLoaded', function() {
+            const phoneLinks = document.querySelectorAll('.phone-number');
+            phoneLinks.forEach(link => {
+                link.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    const phone = this.textContent.trim();
+                    copyPhone(phone);
+                });
+            });
+        });
     </script>
 @endsection

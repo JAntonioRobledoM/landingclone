@@ -126,6 +126,23 @@
         .social-url-input.show {
             display: block;
         }
+
+        /* Estilos para campo opcional */
+        .optional-field {
+            position: relative;
+        }
+
+        .optional-badge {
+            background-color: #6c757d;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            position: absolute;
+            top: -8px;
+            right: 8px;
+            z-index: 10;
+        }
     </style>
 @endsection
 
@@ -230,6 +247,19 @@
                                     <div id="artistFields" class="artist-fields"
                                         style="{{ old('role') === 'artist' ? 'display: block;' : 'display: none;' }}">
                                         
+                                        <!-- Campo de teléfono para artistas -->
+                                        <div class="form-floating mb-2 optional-field">
+                                            <span class="optional-badge">Opcional</span>
+                                            <input type="tel" class="form-control @error('tlf') is-invalid @enderror"
+                                                id="tlf" name="tlf" placeholder="Número de teléfono"
+                                                value="{{ old('tlf') }}">
+                                            <label for="tlf">Número de teléfono</label>
+                                            <small class="text-muted">Formato recomendado: +34 123 456 789</small>
+                                            @error('tlf')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+
                                         <!-- Campo de motivación -->
                                         <div class="mb-3">
                                             <div class="form-floating">
@@ -246,7 +276,8 @@
                                         <!-- Selección de Red Social -->
                                         <div class="social-media-selection">
                                             <label class="form-label mb-3">
-                                                <i class="fas fa-share-alt me-2"></i>Red Social (Opcional)
+                                                <i class="fas fa-share-alt me-2"></i>Red Social 
+                                                <span class="badge bg-secondary ms-1">Opcional</span>
                                             </label>
                                             <small class="text-muted d-block mb-3">Puedes agregar tu Instagram o Facebook para que los usuarios puedan seguirte</small>
                                             
@@ -306,9 +337,13 @@
                                             </div>
                                         </div>
 
-                                        <!-- Subida de obra -->
-                                        <div class="mb-3">
-                                            <label class="form-label">Sube una obra para tu portafolio</label>
+                                        <!-- Subida de obra (opcional) -->
+                                        <div class="mb-3 optional-field">
+                                            <label class="form-label">
+                                                Sube una obra para tu portafolio 
+                                                <span class="badge bg-secondary ms-1">Opcional</span>
+                                            </label>
+                                            <small class="text-muted d-block mb-2">Puedes subir una obra ahora o hacerlo más tarde desde tu panel de artista</small>
                                             <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('artworkImage').click()">
                                                 <i class="fas fa-cloud-upload-alt fa-2x mb-2 text-muted"></i>
                                                 <p class="mb-1">Haz clic para seleccionar una imagen</p>
@@ -322,30 +357,34 @@
                                             @enderror
                                         </div>
 
-                                        <!-- Título de la obra -->
-                                        <div class="form-floating mb-2">
-                                            <input type="text" class="form-control @error('artwork_title') is-invalid @enderror"
-                                                id="artworkTitle" name="artwork_title" placeholder="Título de la obra"
-                                                value="{{ old('artwork_title') }}">
-                                            <label for="artworkTitle">Título de la obra</label>
-                                            @error('artwork_title')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-
-                                        <!-- Descripción de la obra -->
-                                        <div class="mb-3">
-                                            <div class="form-floating">
-                                                <textarea class="form-control @error('artwork_description') is-invalid @enderror"
-                                                    id="artworkDescription" name="artwork_description"
-                                                    placeholder="Descripción de la obra"
-                                                    style="height: 100px">{{ old('artwork_description') }}</textarea>
-                                                <label for="artworkDescription">Descripción de la obra (opcional)</label>
+                                        <!-- Campos de obra que se muestran solo si se sube una imagen -->
+                                        <div id="artworkFields" style="display: none;">
+                                            <!-- Título de la obra -->
+                                            <div class="form-floating mb-2">
+                                                <input type="text" class="form-control @error('artwork_title') is-invalid @enderror"
+                                                    id="artworkTitle" name="artwork_title" placeholder="Título de la obra"
+                                                    value="{{ old('artwork_title') }}">
+                                                <label for="artworkTitle">Título de la obra</label>
+                                                @error('artwork_title')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
                                             </div>
-                                            <small class="text-muted">Describe tu obra, técnica utilizada, inspiración, etc.</small>
-                                            @error('artwork_description')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+
+                                            <!-- Descripción de la obra -->
+                                            <div class="mb-3 optional-field">
+                                                <span class="optional-badge">Opcional</span>
+                                                <div class="form-floating">
+                                                    <textarea class="form-control @error('artwork_description') is-invalid @enderror"
+                                                        id="artworkDescription" name="artwork_description"
+                                                        placeholder="Descripción de la obra"
+                                                        style="height: 100px">{{ old('artwork_description') }}</textarea>
+                                                    <label for="artworkDescription">Descripción de la obra</label>
+                                                </div>
+                                                <small class="text-muted">Describe tu obra, técnica utilizada, inspiración, etc.</small>
+                                                @error('artwork_description')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </div>
                                         </div>
                                     </div>
 
@@ -403,6 +442,11 @@
 
             // Inicializar selección de red social
             initializeSocialMediaSelection();
+
+            // Mostrar campos de obra si ya hay una imagen seleccionada (en caso de error de validación)
+            if (document.getElementById('artworkImage').files.length > 0 || '{{ old('artwork_image') }}') {
+                document.getElementById('artworkFields').style.display = 'block';
+            }
         });
 
         // Función para seleccionar el rol
@@ -413,10 +457,11 @@
             const artistFields = document.getElementById('artistFields');
             if (role === 'artist') {
                 artistFields.style.display = 'block';
-                // Hacer requeridos los campos de artista
+                // Hacer requerido solo el campo de motivación
                 document.getElementById('motivation').required = true;
-                document.getElementById('artworkImage').required = true;
-                document.getElementById('artworkTitle').required = true;
+                // Los campos de obra NO son requeridos por defecto
+                document.getElementById('artworkImage').required = false;
+                document.getElementById('artworkTitle').required = false;
             } else {
                 artistFields.style.display = 'none';
                 // Remover requerimientos de campos de artista
@@ -425,6 +470,7 @@
                 document.getElementById('artworkTitle').required = false;
                 // Limpiar preview de imagen
                 document.getElementById('imagePreview').innerHTML = '';
+                document.getElementById('artworkFields').style.display = 'none';
                 // Resetear selección de red social
                 selectSocialMedia('none');
             }
@@ -499,6 +545,8 @@
         // Función para previsualizar imagen
         function previewImage(input) {
             const preview = document.getElementById('imagePreview');
+            const artworkFields = document.getElementById('artworkFields');
+            
             preview.innerHTML = '';
 
             if (input.files && input.files[0]) {
@@ -511,6 +559,19 @@
                     preview.appendChild(img);
                 };
                 reader.readAsDataURL(input.files[0]);
+
+                // Mostrar campos de obra cuando se selecciona una imagen
+                artworkFields.style.display = 'block';
+                // Hacer requerido el título cuando se sube una obra
+                document.getElementById('artworkTitle').required = true;
+            } else {
+                // Ocultar campos de obra si no hay imagen
+                artworkFields.style.display = 'none';
+                // Remover requerimiento del título
+                document.getElementById('artworkTitle').required = false;
+                // Limpiar campos
+                document.getElementById('artworkTitle').value = '';
+                document.getElementById('artworkDescription').value = '';
             }
         }
 
@@ -585,5 +646,25 @@
                 input.classList.add('is-invalid');
             }
         }
+
+        // Validación de teléfono en tiempo real
+        document.getElementById('tlf').addEventListener('input', function() {
+            const value = this.value.trim();
+            if (!value) {
+                this.classList.remove('is-invalid', 'is-valid');
+                return;
+            }
+
+            // Validación básica de teléfono (permite varios formatos)
+            const phoneRegex = /^(\+?[1-9]\d{1,14}|[0-9\s\-\(\)\.]{7,20})$/;
+            
+            if (phoneRegex.test(value)) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            }
+        });
     </script>
 @endsection
