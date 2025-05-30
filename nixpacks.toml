@@ -7,4 +7,4 @@ cmds = [
 ]
 
 [phases.deploy]
-startCmd = "php artisan migrate --force && php -S 0.0.0.0:${PORT:-8080} -t public"
+startCmd = "php artisan migrate --force && php -S 0.0.0.0:9000 -t public"
